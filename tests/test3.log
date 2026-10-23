@@ -1,0 +1,4 @@
+CALLED: authenticate_user
+CALLED: authenticate_user
+CALLED: authenticate_user
+CALLED: legacy_ldap_login

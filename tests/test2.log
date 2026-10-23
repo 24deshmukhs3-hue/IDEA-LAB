@@ -1,0 +1,5 @@
+CALLED: run_pipeline
+CALLED: validate_and_transform_batch
+CALLED: validate_and_transform_batch
+CALLED: validate_and_transform_batch
+CALLED: unused_csv_exporter
