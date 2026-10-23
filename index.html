@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-black">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodePrune - Intelligent Code Analysis Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CodeMirror Core -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+        
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #000000; }
+        
+        .CodeMirror {
+            height: 340px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            border-radius: 0.75rem;
+            background-color: #000000 !important;
+            border: 1px solid #27272a;
+            padding: 8px 0;
+            color: #f4f4f5 !important;
+        }
+
+        .cm-keyword { color: #d8b4fe !important; font-weight: 600; }
+        .cm-def { color: #7dd3fc !important; font-weight: 500; }
+        .cm-variable { color: #f4f4f5 !important; }
+        .cm-string { color: #4ade80 !important; }
+        .cm-number { color: #fbbf24 !important; }
+        .cm-operator { color: #22d3ee !important; }
+        .cm-builtin { color: #a78bfa !important; }
+        .cm-comment { color: #71717a !important; font-style: italic; }
+        
+        .CodeMirror-gutters { background-color: #000000 !important; border-right: 1px solid #27272a !important; }
+        .CodeMirror-linenumber { color: #52525b !important; }
+        .CodeMirror-cursor { border-left: 2px solid #a855f7 !important; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #000000; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+    </style>
+</head>
+<body class="h-full text-zinc-200 font-sans antialiased flex flex-col bg-black">
+
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-2/3 h-28 bg-gradient-to-r from-purple-600/10 via-violet-600/10 to-emerald-600/10 blur-3xl pointer-events-none"></div>
+
+    <header class="border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md px-8 py-4 flex items-center justify-between shrink-0 sticky top-0 z-50">
+        <div class="flex items-center space-x-3.5">
+            <div class="p-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-purple-400 shadow-sm">
+                <i class="fa-solid fa-scissors text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                    CodePrune
+                    <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-zinc-900 text-purple-400 border border-zinc-800">IDEA LAB v2.0</span>
+                </h1>
+                <p class="text-xs text-zinc-400">Intelligent Code Analysis for Redundancy & Optimization</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium bg-emerald-950/30 text-emerald-400 border border-emerald-800/40 shadow-sm">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                100% Offline Engine
+            </span>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-hidden p-6 gap-6 grid grid-cols-1 lg:grid-cols-12 max-w-[1920px] mx-auto w-full z-10">
+        
+        <section class="lg:col-span-6 flex flex-col gap-4 h-full min-h-0 overflow-y-auto">
+            <div class="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-5 flex flex-col gap-4 shadow-2xl">
+                
+                <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-800/80">
+                    <div class="flex items-center gap-2.5">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Language:</label>
+                        <select id="languageSelect" onchange="switchLanguage()" class="bg-black border border-zinc-800 text-xs text-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-purple-500 transition">
+                            <option value="python">Python (.py)</option>
+                            <option value="javascript">JavaScript (.js)</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <label for="fileInput" class="cursor-pointer text-xs bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 px-3 py-1.5 rounded-lg transition flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-file-arrow-up text-purple-400"></i> Upload Code File
+                        </label>
+                        <input type="file" id="fileInput" accept=".py,.js" class="hidden" onchange="handleFileUpload(event)">
+                        
+                        <button onclick="clearEditor()" class="text-xs bg-zinc-900/50 hover:bg-zinc-800 border border-zinc-800/50 text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded-lg transition">Clear</button>
+                    </div>
+                </div>
+
+                <div class="relative overflow-hidden rounded-xl border border-zinc-800/80">
+                    <textarea id="codeEditor"></textarea>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-indigo-400"></i> Runtime / Telemetry Logs (Optional)
+                    </label>
+                    <textarea id="logEditor" placeholder="Paste runtime logs or JSON invocation logs (e.g., CALLED: RemoveTask)..." class="w-full bg-black border border-zinc-800/80 rounded-xl p-3 text-xs text-zinc-300 font-mono focus:outline-none focus:border-indigo-500 h-24 resize-none"></textarea>
+                </div>
+
+                <button onclick="triggerAnalysis()" id="analyzeBtn" class="w-full bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold py-3.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2.5 shadow-lg shadow-purple-950/50 active:scale-[0.99]">
+                    <i class="fa-solid fa-wand-magic-sparkles text-purple-200"></i>
+                    <span>Run Unified Code & Telemetry Analysis</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="lg:col-span-6 flex flex-col gap-4 h-full min-h-0">
+            <div class="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-6 flex flex-col h-full shadow-2xl overflow-hidden">
+                
+                <div class="flex items-center justify-between pb-4 border-b border-zinc-800/80 shrink-0">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-2.5">
+                        <i class="fa-solid fa-chart-pie text-purple-400"></i> Diagnostics & LLM Insights
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <span id="confidenceBadge" class="hidden text-xs bg-emerald-950/50 text-emerald-400 px-3 py-1 rounded-full font-mono border border-emerald-800/40">Confidence: 94.5%</span>
+                        <span id="issueCounter" class="text-xs bg-zinc-900 text-zinc-300 px-3 py-1 rounded-full font-mono border border-zinc-800">0 Issues Found</span>
+                    </div>
+                </div>
+
+                <div id="emptyState" class="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-4">
+                    <div class="w-16 h-16 bg-zinc-900/60 rounded-2xl border border-zinc-800 flex items-center justify-center text-zinc-600 text-2xl shadow-inner">
+                        <i class="fa-solid fa-code-merge"></i>
+                    </div>
+                    <div class="space-y-1">
+                        <p class="text-zinc-300 font-medium text-sm">Ready for Analysis</p>
+                        <p class="text-xs text-zinc-500 max-w-xs leading-relaxed">Analyze source code + telemetry logs to identify dead code, code smells, and underutilized features.</p>
+                    </div>
+                </div>
+
+                <div id="loadingState" class="hidden flex-1 flex flex-col items-center justify-center space-y-4">
+                    <div class="w-10 h-10 border-4 border-purple-500/20 border-t-purple-400 rounded-full animate-spin"></div>
+                    <p class="text-xs text-zinc-400 animate-pulse font-mono">Running Static AST + Telemetry Reasoning Engine...</p>
+                </div>
+
+                <div id="resultsContent" class="hidden flex-1 overflow-y-auto space-y-5 pr-1 mt-4">
+                    
+                    <div class="space-y-2.5">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-rose-400 flex items-center gap-2">
+                            <i class="fa-solid fa-skull-crossbones"></i> Dead / Unreachable / Duplicate Code
+                        </h3>
+                        <div id="deadCodeContainer" class="space-y-2.5"></div>
+                    </div>
+
+                    <div class="space-y-2.5">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line"></i> Feature-Utilization Analytics
+                        </h3>
+                        <div id="telemetryContainer" class="space-y-2.5"></div>
+                    </div>
+
+                    <div class="space-y-2.5">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                            <i class="fa-solid fa-box-archive"></i> Redundant / Unused Imports
+                        </h3>
+                        <div id="unusedImportsContainer" class="space-y-2.5"></div>
+                    </div>
+
+                    <div class="space-y-2.5">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-2">
+                            <i class="fa-solid fa-radiation"></i> Code Smells & High Complexity
+                        </h3>
+                        <div id="codeSmellsContainer" class="space-y-2.5"></div>
+                    </div>
+
+                    <div class="p-4 bg-black border border-zinc-800 rounded-xl space-y-2 shadow-inner">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                            <i class="fa-solid fa-brain"></i> LLM Refactoring Strategy
+                        </h3>
+                        <p id="refactoringSummary" class="text-xs text-zinc-300 leading-relaxed"></p>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        let editor = CodeMirror.fromTextArea(document.getElementById("codeEditor"), {
+            lineNumbers: true,
+            mode: "python",
+            indentUnit: 4,
+            viewportMargin: Infinity
+        });
+
+        const pythonSample = `def RemoveTask(task_id, tasks):\n    if tasks:\n        if task_id in tasks:\n            if tasks[task_id]["status"] != "locked":\n                del tasks[task_id]\n                return True\n            else:\n                print("Locked task")\n        else:\n            print("Task not found")\n    else:\n        print("No tasks available")\n    return False\n\ndef RemoveTask(task_id, tasks):\n    pass`;
+
+        editor.setValue(pythonSample);
+        document.getElementById("logEditor").value = "CALLED: RemoveTask\nCALLED: SearchTask\nCALLED: SearchTask\nCALLED: SearchTask";
+
+        function switchLanguage() {
+            const lang = document.getElementById("languageSelect").value;
+            editor.setOption("mode", lang === "python" ? "python" : "javascript");
+        }
+
+        function clearEditor() {
+            editor.setValue("");
+            document.getElementById("logEditor").value = "";
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                editor.setValue(e.target.result);
+            };
+            reader.readAsText(file);
+        }
+
+        async function triggerAnalysis() {
+            const code = editor.getValue();
+            const language = document.getElementById("languageSelect").value;
+            const logs = document.getElementById("logEditor").value;
+
+            if (!code.trim()) {
+                alert("Please enter or upload code to analyze.");
+                return;
+            }
+
+            document.getElementById("emptyState").classList.add("hidden");
+            document.getElementById("resultsContent").classList.add("hidden");
+            document.getElementById("loadingState").classList.remove("hidden");
+
+            try {
+                const response = await fetch("/clean_code", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ source_code: code, language: language, runtime_logs: logs })
+                });
+
+                const data = await response.json();
+                document.getElementById("loadingState").classList.add("hidden");
+                document.getElementById("resultsContent").classList.remove("hidden");
+
+                renderDiagnostics(data);
+            } catch (error) {
+                document.getElementById("loadingState").classList.add("hidden");
+                alert("Failed to connect to local analysis backend.");
+            }
+        }
+
+        function renderDiagnostics(data) {
+            const deadContainer = document.getElementById("deadCodeContainer");
+            const telemetryContainer = document.getElementById("telemetryContainer");
+            const importsContainer = document.getElementById("unusedImportsContainer");
+            const smellsContainer = document.getElementById("codeSmellsContainer");
+            
+            deadContainer.innerHTML = "";
+            telemetryContainer.innerHTML = "";
+            importsContainer.innerHTML = "";
+            smellsContainer.innerHTML = "";
+
+            let issueCount = 0;
+
+            if (data.detected_dead_code.length === 0) {
+                deadContainer.innerHTML = `<div class="p-3 bg-black border border-zinc-800 rounded-xl text-xs text-zinc-500 italic">No dead code, unreachable statements, or duplicates detected.</div>`;
+            } else {
+                data.detected_dead_code.forEach(item => {
+                    issueCount++;
+                    deadContainer.innerHTML += `
+                        <div class="p-3.5 bg-rose-950/20 border border-rose-900/30 rounded-xl space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-rose-400 font-mono">${item.title}</span>
+                                <span class="text-[10px] bg-rose-900/40 text-rose-300 px-2.5 py-0.5 rounded font-mono border border-rose-800/30">Line ${item.line}</span>
+                            </div>
+                            <p class="text-xs text-zinc-300 font-mono bg-black p-2.5 rounded-lg border border-zinc-800">${escapeHtml(item.snippet)}</p>
+                            <p class="text-xs text-emerald-400 pt-0.5 flex items-center gap-1.5"><i class="fa-solid fa-wrench text-[10px]"></i> <b>How to Fix:</b> ${item.fix}</p>
+                        </div>`;
+                });
+            }
+
+            if (!data.telemetry_analytics || data.telemetry_analytics.length === 0) {
+                telemetryContainer.innerHTML = `<div class="p-3 bg-black border border-zinc-800 rounded-xl text-xs text-zinc-500 italic">All logged features show healthy usage levels.</div>`;
+            } else {
+                data.telemetry_analytics.forEach(item => {
+                    issueCount++;
+                    telemetryContainer.innerHTML += `
+                        <div class="p-3.5 bg-blue-950/20 border border-blue-900/30 rounded-xl space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-blue-400 font-mono">Low-Usage Feature: '${item.feature}'</span>
+                                <span class="text-[10px] bg-blue-900/40 text-blue-300 px-2.5 py-0.5 rounded font-mono border border-blue-800/30">${item.invocation_count} Invocations</span>
+                            </div>
+                            <p class="text-xs text-zinc-300">${item.recommendation}</p>
+                        </div>`;
+                });
+            }
+
+            if (data.redundant_imports.length === 0) {
+                importsContainer.innerHTML = `<div class="p-3 bg-black border border-zinc-800 rounded-xl text-xs text-zinc-500 italic">No redundant imports found.</div>`;
+            } else {
+                data.redundant_imports.forEach(item => {
+                    issueCount++;
+                    importsContainer.innerHTML += `
+                        <div class="p-3.5 bg-amber-950/20 border border-amber-900/30 rounded-xl space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-amber-400 font-mono">Unused Import: '${item.name}'</span>
+                                <span class="text-[10px] bg-amber-900/40 text-amber-300 px-2.5 py-0.5 rounded font-mono border border-amber-800/30">Line ${item.line}</span>
+                            </div>
+                            <p class="text-xs text-emerald-400 pt-0.5 flex items-center gap-1.5"><i class="fa-solid fa-wrench text-[10px]"></i> <b>How to Fix:</b> ${item.fix}</p>
+                        </div>`;
+                });
+            }
+
+            if (data.code_smells.length === 0) {
+                smellsContainer.innerHTML = `<div class="p-3 bg-black border border-zinc-800 rounded-xl text-xs text-zinc-500 italic">No high complexity code smells detected.</div>`;
+            } else {
+                data.code_smells.forEach(item => {
+                    issueCount++;
+                    smellsContainer.innerHTML += `
+                        <div class="p-3.5 bg-purple-950/20 border border-purple-900/30 rounded-xl space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-purple-400 font-mono">High Complexity: '${item.target}'</span>
+                                <span class="text-[10px] bg-purple-900/40 text-purple-300 px-2.5 py-0.5 rounded font-mono border border-purple-800/30">Score: ${item.complexity}</span>
+                            </div>
+                            <p class="text-xs text-emerald-400 pt-0.5 flex items-center gap-1.5"><i class="fa-solid fa-wrench text-[10px]"></i> <b>How to Fix:</b> ${item.fix}</p>
+                        </div>`;
+                });
+            }
+
+            document.getElementById("confidenceBadge").classList.remove("hidden");
+            document.getElementById("confidenceBadge").innerText = `Confidence: ${data.confidence_score}`;
+            document.getElementById("issueCounter").innerText = `${issueCount} Issue${issueCount === 1 ? '' : 's'} Found`;
+            document.getElementById("refactoringSummary").innerText = data.summary_advice;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
