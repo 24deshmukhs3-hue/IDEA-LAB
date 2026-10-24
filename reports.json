@@ -1,0 +1,46 @@
+{
+    "status": "success",
+    "detected_dead_code": [
+        {
+            "function": "authenticate_user",
+            "title": "Unreachable Statement in 'authenticate_user'",
+            "line": 21,
+            "snippet": "print('Security log audit completed.')",
+            "code_snippet": "print('Security log audit completed.')",
+            "fix": "Delete statement on line 21 as execution returns prior to this line."
+        },
+        {
+            "title": "Duplicate Function Definition: 'authenticate_user'",
+            "line": 24,
+            "snippet": "def authenticate_user(...)",
+            "fix": "Remove or rename this duplicate function. First defined on line 6."
+        }
+    ],
+    "redundant_imports": [
+        {
+            "name": "os",
+            "line": 1,
+            "fix": "Remove unreferenced import statement for 'os' at line 1."
+        },
+        {
+            "name": "hashlib",
+            "line": 2,
+            "fix": "Remove unreferenced import statement for 'hashlib' at line 2."
+        },
+        {
+            "name": "base64",
+            "line": 3,
+            "fix": "Remove unreferenced import statement for 'base64' at line 3."
+        },
+        {
+            "name": "hmac",
+            "line": 4,
+            "fix": "Remove unreferenced import statement for 'hmac' at line 4."
+        }
+    ],
+    "code_smells": [],
+    "telemetry_analytics": [],
+    "confidence_score": "90.0% (AST + Telemetry Grounding)",
+    "summary_advice": "Identified 6 optimization opportunity/opportunities focusing on high-priority dead/duplicate code, unused module imports. Removing these will reduce memory overhead and simplify unit testing.",
+    "impact_rank": "HIGH"
+}

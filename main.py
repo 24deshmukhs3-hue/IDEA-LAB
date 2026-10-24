@@ -1,6 +1,7 @@
 import sys
 import os
 import re
+import json
 from typing import Dict, Any, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
@@ -48,7 +49,7 @@ def clean_code_endpoint(request: CodeAnalysisRequest):
         # 4. Local AI Reasoning Layer & Prioritization
         reasoning = synthesize_reasoning(static_results, telemetry_results)
 
-        return {
+        data = {
             "status": "success",
             "detected_dead_code": static_results.get("detected_dead_code", []),
             "redundant_imports": static_results.get("redundant_imports", []),
@@ -58,6 +59,11 @@ def clean_code_endpoint(request: CodeAnalysisRequest):
             "summary_advice": reasoning.get("summary_advice", static_results.get("summary_advice")),
             "impact_rank": reasoning.get("impact_rank", "MEDIUM")
         }
+
+        with open("/home/sahil/Code Analyzer/reports.json", "w") as file:
+            json.dump(data, file, indent=4)
+
+        return data
 
     except SyntaxError as se:
         raise HTTPException(status_code=400, detail=f"Syntax Error in source code: {str(se)}")
